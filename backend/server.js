@@ -1,5 +1,6 @@
 import { createServer } from "node:http";
 import { addIncomingReading, getTelemetryReadings } from "./src/data/runtimeTelemetry.js";
+import { fetchInfluxTelemetryReadings } from "./src/services/influxTelemetry.js";
 import { buildDashboardPayload, buildHealthPayload } from "./src/services/analytics.js";
 
 const PORT = Number(process.env.PORT || 3001);
@@ -57,9 +58,19 @@ const server = createServer(async (request, response) => {
   }
 
   const url = new URL(request.url, `http://${request.headers.host}`);
-  const dashboard = buildDashboardPayload({
-    readings: getTelemetryReadings(),
-  });
+  let readings = [];
+
+  try {
+    readings = await fetchInfluxTelemetryReadings();
+  } catch (error) {
+    readings = [];
+  }
+
+  if (!readings.length) {
+    readings = getTelemetryReadings();
+  }
+
+  const dashboard = buildDashboardPayload({ readings });
 
   if (url.pathname === "/health") {
     sendJson(response, 200, buildHealthPayload(dashboard.services));
