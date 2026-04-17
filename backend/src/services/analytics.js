@@ -177,7 +177,7 @@ export function buildDashboardPayload(options = {}) {
       projectName: "Smart Greenhouse Pipeline",
       scenario: "Monitoramento ambiental com ESP32, MQTT, AWS e camada web",
       lastUpdate: latest.timestamp,
-      dataSource: hasRealtimeReadings ? "MQTT / Node-RED / API" : "Simulacao local",
+      dataSource: hasRealtimeReadings ? "InfluxDB" : "Sem dados",
       pollingIntervalMs: 10000,
     },
     currentValues: {

@@ -1,5 +1,4 @@
 import { createServer } from "node:http";
-import { addIncomingReading, getTelemetryReadings } from "./src/data/runtimeTelemetry.js";
 import { fetchInfluxTelemetryReadings } from "./src/services/influxTelemetry.js";
 import { buildDashboardPayload, buildHealthPayload } from "./src/services/analytics.js";
 
@@ -66,10 +65,6 @@ const server = createServer(async (request, response) => {
     readings = [];
   }
 
-  if (!readings.length) {
-    readings = getTelemetryReadings();
-  }
-
   const dashboard = buildDashboardPayload({ readings });
 
   if (url.pathname === "/health") {
@@ -83,26 +78,10 @@ const server = createServer(async (request, response) => {
   }
 
   if (url.pathname === "/api/ingest" && request.method === "POST") {
-    try {
-      const payload = await readRequestBody(request);
-      const reading = addIncomingReading(payload);
-
-      if (!reading) {
-        sendJson(response, 400, {
-          error: "invalid_payload",
-          expected: ["temperature|temperatura", "humidity|umidade", "luminosity|luminosidade", "co2"],
-        });
-        return;
-      }
-
-      sendJson(response, 202, {
-        status: "accepted",
-        receivedAt: new Date().toISOString(),
-        reading,
-      });
-    } catch (error) {
-      sendJson(response, 400, { error: "invalid_json" });
-    }
+    sendJson(response, 410, {
+      error: "deprecated_endpoint",
+      message: "A ingestao em memoria foi removida. Use o InfluxDB como fonte oficial dos dados.",
+    });
     return;
   }
 
