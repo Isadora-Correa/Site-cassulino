@@ -6,7 +6,7 @@ Projeto academico de monitoramento ambiental com pipeline IoT completo, do dispo
 
 Estufa inteligente com leitura de:
 
-- temperatura
+- temperaturaa
 - umidade
 - CO2
 - luminosidade
