@@ -1,5 +1,3 @@
-import { buildMockReadings } from "../data/mockReadings.js";
-
 const SENSOR_RANGES = {
   temperature: { unit: "°C", min: 16, max: 38, target: 24 },
   humidity: { unit: "%", min: 30, max: 90, target: 58 },
@@ -107,7 +105,67 @@ function buildBarData(readings) {
 
 export function buildDashboardPayload(options = {}) {
   const hasRealtimeReadings = Array.isArray(options.readings) && options.readings.length > 0;
-  const readings = hasRealtimeReadings ? options.readings : buildMockReadings();
+  const readings = hasRealtimeReadings ? options.readings : [];
+
+  if (!readings.length) {
+    return {
+      meta: {
+        projectName: "Smart Greenhouse Pipeline",
+        scenario: "Monitoramento ambiental com ESP32, MQTT, AWS e camada web",
+        lastUpdate: null,
+        dataSource: "Sem dados",
+        pollingIntervalMs: 10000,
+      },
+      currentValues: {
+        temperature: { ...SENSOR_RANGES.temperature, value: 0 },
+        humidity: { ...SENSOR_RANGES.humidity, value: 0 },
+        co2: { ...SENSOR_RANGES.co2, value: 0 },
+        luminosity: { ...SENSOR_RANGES.luminosity, value: 0 },
+      },
+      timeSeriesData: [],
+      barData: [],
+      alerts: [],
+      services: [
+        { name: "Broker MQTT", status: "online", latency: "18ms", detail: "Mosquitto em EC2" },
+        { name: "Node-RED", status: "online", latency: "25ms", detail: "Orquestracao do pipeline" },
+        { name: "InfluxDB", status: "online", latency: "11ms", detail: "Series temporais" },
+        { name: "API Node.js", status: "online", latency: "31ms", detail: "REST e regras de negocio" },
+        { name: "MySQL", status: "online", latency: "20ms", detail: "Consolidacao relacional" },
+        { name: "Grafana", status: "online", latency: "16ms", detail: "Dashboard operacional" },
+      ],
+      processedMetrics: [
+        {
+          label: "Media hora (temp.)",
+          value: "--",
+          description: "Aguardando leituras reais para calcular a media.",
+        },
+        {
+          label: "Classificacao atual",
+          value: "--",
+          description: "A classificacao sera exibida quando houver dados.",
+        },
+        {
+          label: "Anomalias 24h",
+          value: "--",
+          description: "Sem leituras para contabilizar anomalias ainda.",
+        },
+        {
+          label: "Consolidacao",
+          value: "5 min",
+          description: "Dados resumidos antes de persistir no banco relacional.",
+        },
+      ],
+      summary: {},
+      pipelineSteps: [
+        "Colab ou ESP32 publica JSON no topico sensor/lab01/telemetria",
+        "Broker MQTT recebe e encaminha para o Node-RED",
+        "Node-RED valida payload, grava no InfluxDB e chama a API",
+        "Backend Node.js aplica regras e consolida no MySQL",
+        "Frontend React e Grafana exibem dados em tempo real",
+      ],
+    };
+  }
+
   const latest = readings[readings.length - 1];
   const lastHour = readings.slice(-12);
   const classifications = readings.map(classifyReading);

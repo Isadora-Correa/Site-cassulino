@@ -9,7 +9,7 @@ import QuickActions from "@/components/dashboard/QuickActions";
 import SensorCard from "@/components/dashboard/SensorCard";
 import Sidebar from "@/components/dashboard/Sidebar";
 import SystemStatus from "@/components/dashboard/SystemStatus";
-import { fetchDashboardData, getFallbackDashboardData } from "@/lib/sensorData";
+import { fetchDashboardData, getEmptyDashboardData } from "@/lib/sensorData";
 
 const sensors = [
   { key: "temperature", title: "Temperatura", icon: Thermometer, color: "#F97316", gradientFrom: "#F97316", gradientTo: "#FB923C", dataKey: "temperature" },
@@ -20,17 +20,23 @@ const sensors = [
 
 export default function Dashboard() {
   const [darkMode, setDarkMode] = useState(false);
-  const [isConnected, setIsConnected] = useState(true);
-  const [dashboardData, setDashboardData] = useState(getFallbackDashboardData());
+  const [isConnected, setIsConnected] = useState(false);
+  const [dashboardData, setDashboardData] = useState(getEmptyDashboardData());
 
   useEffect(() => {
     let active = true;
 
     const loadDashboard = async () => {
-      const nextData = await fetchDashboardData();
-      if (!active) return;
-      setDashboardData(nextData);
-      setIsConnected(nextData.meta?.dataSource !== "Simulacao local");
+      try {
+        const nextData = await fetchDashboardData();
+        if (!active) return;
+        setDashboardData(nextData);
+        setIsConnected(Boolean(nextData.timeSeriesData?.length));
+      } catch (error) {
+        if (!active) return;
+        setDashboardData(getEmptyDashboardData());
+        setIsConnected(false);
+      }
     };
 
     loadDashboard();
