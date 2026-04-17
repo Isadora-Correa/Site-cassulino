@@ -97,7 +97,7 @@ export default function Dashboard() {
               <BusinessMetrics metrics={dashboardData.processedMetrics || []} />
             </div>
             <div className="lg:col-span-3 flex flex-col gap-4">
-              <QuickActions />
+              <QuickActions dashboardData={dashboardData} />
             </div>
           </div>
 

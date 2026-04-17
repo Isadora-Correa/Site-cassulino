@@ -1,13 +1,9 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { LayoutDashboard, Bell, Settings, Sun, Moon, Activity, BarChart3, Radio } from 'lucide-react';
+import { LayoutDashboard, Sun, Moon, Radio } from 'lucide-react';
 
 const navItems = [
   { icon: LayoutDashboard, path: '/', label: 'Dashboard' },
-  { icon: Activity, path: '/', label: 'MQTT' },
-  { icon: BarChart3, path: '/', label: 'Analises' },
-  { icon: Bell, path: '/', label: 'Alertas' },
-  { icon: Settings, path: '/', label: 'AWS' },
 ];
 
 export default function Sidebar({ darkMode, setDarkMode }) {
