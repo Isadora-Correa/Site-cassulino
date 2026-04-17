@@ -1,4 +1,5 @@
 import { createServer } from "node:http";
+import { addIncomingReading, getTelemetryReadings } from "./src/data/runtimeTelemetry.js";
 import { buildDashboardPayload, buildHealthPayload } from "./src/services/analytics.js";
 
 const PORT = Number(process.env.PORT || 3001);
@@ -56,7 +57,9 @@ const server = createServer(async (request, response) => {
   }
 
   const url = new URL(request.url, `http://${request.headers.host}`);
-  const dashboard = buildDashboardPayload();
+  const dashboard = buildDashboardPayload({
+    readings: getTelemetryReadings(),
+  });
 
   if (url.pathname === "/health") {
     sendJson(response, 200, buildHealthPayload(dashboard.services));
@@ -71,10 +74,20 @@ const server = createServer(async (request, response) => {
   if (url.pathname === "/api/ingest" && request.method === "POST") {
     try {
       const payload = await readRequestBody(request);
+      const reading = addIncomingReading(payload);
+
+      if (!reading) {
+        sendJson(response, 400, {
+          error: "invalid_payload",
+          expected: ["temperature|temperatura", "humidity|umidade", "luminosity|luminosidade", "co2"],
+        });
+        return;
+      }
+
       sendJson(response, 202, {
         status: "accepted",
         receivedAt: new Date().toISOString(),
-        payload,
+        reading,
       });
     } catch (error) {
       sendJson(response, 400, { error: "invalid_json" });

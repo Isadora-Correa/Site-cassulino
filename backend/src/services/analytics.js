@@ -8,6 +8,10 @@ const SENSOR_RANGES = {
 };
 
 function average(values) {
+  if (!values.length) {
+    return 0;
+  }
+
   return values.reduce((sum, value) => sum + value, 0) / values.length;
 }
 
@@ -82,8 +86,28 @@ function buildAlerts(readings) {
     });
 }
 
-export function buildDashboardPayload() {
-  const readings = buildMockReadings();
+function buildBarData(readings) {
+  const labels = ["Seg", "Ter", "Qua", "Qui", "Sex", "Sab", "Dom"];
+  const chunkSize = Math.max(1, Math.ceil(readings.length / labels.length));
+
+  return labels.map((name, index) => {
+    const start = index * chunkSize;
+    const sourceSlice = readings.slice(start, start + chunkSize);
+    const fallbackSlice = sourceSlice.length ? sourceSlice : [readings[readings.length - 1]];
+
+    return {
+      name,
+      temperature: Number(average(fallbackSlice.map((item) => item.temperature)).toFixed(1)),
+      humidity: Number(average(fallbackSlice.map((item) => item.humidity)).toFixed(1)),
+      co2: Math.round(average(fallbackSlice.map((item) => item.co2))),
+      luminosity: Math.round(average(fallbackSlice.map((item) => item.luminosity))),
+    };
+  });
+}
+
+export function buildDashboardPayload(options = {}) {
+  const hasRealtimeReadings = Array.isArray(options.readings) && options.readings.length > 0;
+  const readings = hasRealtimeReadings ? options.readings : buildMockReadings();
   const latest = readings[readings.length - 1];
   const lastHour = readings.slice(-12);
   const classifications = readings.map(classifyReading);
@@ -95,7 +119,7 @@ export function buildDashboardPayload() {
       projectName: "Smart Greenhouse Pipeline",
       scenario: "Monitoramento ambiental com ESP32, MQTT, AWS e camada web",
       lastUpdate: latest.timestamp,
-      dataSource: "API Node.js",
+      dataSource: hasRealtimeReadings ? "MQTT / Node-RED / API" : "Simulacao local",
       pollingIntervalMs: 10000,
     },
     currentValues: {
@@ -105,16 +129,7 @@ export function buildDashboardPayload() {
       luminosity: { ...SENSOR_RANGES.luminosity, value: latest.luminosity },
     },
     timeSeriesData: readings,
-    barData: ["Seg", "Ter", "Qua", "Qui", "Sex", "Sab", "Dom"].map((name, index) => {
-      const daySlice = readings.slice(index * 4, index * 4 + 4);
-      return {
-        name,
-        temperature: Number(average(daySlice.map((item) => item.temperature)).toFixed(1)),
-        humidity: Number(average(daySlice.map((item) => item.humidity)).toFixed(1)),
-        co2: Math.round(average(daySlice.map((item) => item.co2))),
-        luminosity: Math.round(average(daySlice.map((item) => item.luminosity))),
-      };
-    }),
+    barData: buildBarData(readings),
     alerts: buildAlerts(readings),
     services: [
       { name: "Broker MQTT", status: "online", latency: "18ms", detail: "Mosquitto em EC2" },
@@ -155,7 +170,7 @@ export function buildDashboardPayload() {
       latestClassification: classifyReading(latest),
     },
     pipelineSteps: [
-      "ESP32 no Wokwi publica JSON no topico greenhouse/sensors",
+      "Colab ou ESP32 publica JSON no topico sensor/lab01/telemetria",
       "Broker MQTT recebe e encaminha para o Node-RED",
       "Node-RED valida payload, grava no InfluxDB e chama a API",
       "Backend Node.js aplica regras e consolida no MySQL",
