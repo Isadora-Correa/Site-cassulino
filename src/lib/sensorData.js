@@ -1,4 +1,4 @@
-const API_BASE_URL = import.meta.env.VITE_IOT_API_URL || "http://localhost:3001";
+const API_BASE_URL = import.meta.env.VITE_IOT_API_URL || window.location.origin;
 
 const SENSOR_RANGES = {
   temperature: { unit: "°C", min: 16, max: 38, target: 24, value: 0 },
